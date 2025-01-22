@@ -1,9 +1,7 @@
 package com.vaultwise.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+
 import java.util.List;
 
 @Entity
@@ -16,6 +14,7 @@ public class User {
     private String email;
     private String password;
 
+    @OneToMany(mappedBy = "user")
     private List<Account> accounts;
 
     public User(Long id, String firstName, String lastName, String email, String password) {
