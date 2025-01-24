@@ -1,5 +1,7 @@
 package com.vaultwise.dto;
 
+import com.vaultwise.model.User;
+
 import java.math.BigDecimal;
 
 public class PaymentRequest {
@@ -32,4 +34,5 @@ public class PaymentRequest {
     public void setDescription(String description) {
         this.description = description;
     }
+
 }

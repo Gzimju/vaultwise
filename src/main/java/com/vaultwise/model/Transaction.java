@@ -1,5 +1,6 @@
 package com.vaultwise.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -11,14 +12,18 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "amount",nullable = false)
     private BigDecimal amount;
 
+    @Column(name = "type", nullable = false)
     private String type; // Deposit, Withdrawal, etc.
 
+    @Column(name = "transaction_date", nullable = false)
     private Date transactionDate;
 
     @ManyToOne
     @JoinColumn(name = "account_id")
+    @JsonIgnore
     private Account account; // Associated account for this transaction
 
     // Constructors, Getters, Setters

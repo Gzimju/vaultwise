@@ -1,18 +1,31 @@
 package com.vaultwise.dto;
 
-public class CardRequest {
+import java.time.LocalDate;
 
-    private String accountNumber;
+public class CardRequest {
+    private Long accountId;
+    private Long userId;
     private String cardNumber;
     private String cardType;
+    private LocalDate expirationDate;
+    private String securityCode;
+    private String cardHolderName;
 
     // Getters and setters
-    public String getAccountNumber() {
-        return accountNumber;
+    public Long getAccountId() {
+        return accountId;
     }
 
-    public void setAccountNumber(String accountNumber) {
-        this.accountNumber = accountNumber;
+    public void setAccountId(Long accountId) {
+        this.accountId = accountId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getCardNumber() {
@@ -30,5 +43,28 @@ public class CardRequest {
     public void setCardType(String cardType) {
         this.cardType = cardType;
     }
-}
 
+    public LocalDate getExpirationDate() {
+        return expirationDate;
+    }
+
+    public void setExpirationDate(LocalDate expirationDate) {
+        this.expirationDate = expirationDate;
+    }
+
+    public String getSecurityCode() {
+        return securityCode;
+    }
+
+    public void setSecurityCode(String securityCode) {
+        this.securityCode = securityCode;
+    }
+
+    public String getCardHolderName() {
+        return cardHolderName;
+    }
+
+    public void setCardHolderName(String cardHolderName) {
+        this.cardHolderName = cardHolderName;
+    }
+}

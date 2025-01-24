@@ -12,14 +12,17 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "first_name", nullable = false)
     private String firstName;
-    private String password;
-    private String email;
-    private String lastName;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    @JsonIgnore // Prevent recursion in the JSON response
-    private List<Payment> payments; // Payments associated with this user
+    @Column(name = "password", nullable = false)
+    private String password;
+
+    @Column(name = "email", nullable = false)
+    private String email;
+
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
 
     // Constructors
     public User() {}
@@ -69,11 +72,4 @@ public class User {
         this.email = email;
     }
 
-    public List<Payment> getPayments() {
-        return payments;
-    }
-
-    public void setPayments(List<Payment> payments) {
-        this.payments = payments;
-    }
 }

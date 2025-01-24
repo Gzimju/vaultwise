@@ -26,6 +26,16 @@ public class BankingService {
         this.paymentRepository = paymentRepository;
     }
 
+    public Account createAccount(Account account) {
+        if (account.getAccountNumber() == null || account.getAccountNumber().isEmpty()) {
+            throw new IllegalArgumentException("Account number cannot be null or empty");
+        }
+        if (account.getBalance() == null) {
+            account.setBalance(BigDecimal.ZERO); // Default balance if not provided
+        }
+        return accountRepository.save(account);
+    }
+
     // Deposit Money into an Account
     public void deposit(String accountNumber, BigDecimal amount) {
         Account account = accountRepository.findByAccountNumber(accountNumber)
@@ -47,13 +57,15 @@ public class BankingService {
 
     // Get Cards for an Account
     public List<Card> getCards(Long accountId) {
-        Account account = accountRepository.findById(accountId).orElseThrow(() -> new RuntimeException("Account not found"));
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
         return cardRepository.findByAccount(account);
     }
 
     // Get Payments for an Account
     public List<Payment> getPayments(Long accountId) {
-        Account account = accountRepository.findById(accountId).orElseThrow(() -> new RuntimeException("Account not found"));
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
         return paymentRepository.findByAccount(account);
     }
 }

@@ -1,5 +1,6 @@
 package com.vaultwise.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -10,19 +11,30 @@ public class Card {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "account_number",nullable = false)
     private String accountNumber;
+    @Column(name = "card_number", nullable = false)
     private String cardNumber;
+    @Column(name = "card_type",nullable = false)
     private String cardType;
 
-    @Column(name = "expiration_date")
+    @Column(name = "expiration_date", nullable = false)
     private LocalDate expirationDate;
 
-    @Column(name = "security_code")
+    @Column(name = "security_code", nullable = false)
     private String securityCode;
 
+    @Column(name = "card_holder_name", nullable = false)
+    private String cardHolderName;
+
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JoinColumn(name = "user_id", nullable = false)
+
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
 
     // Getters and Setters
     public Long getId() {
@@ -79,5 +91,17 @@ public class Card {
 
     public void setUser(User user) {
         this.user = user;
+    }
+    public Account getAccount() {
+        return account;
+    }
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+    public String getCardHolderName() {
+        return cardHolderName;
+    }
+    public void setCardHolderName(String cardHolderName) {
+        this.cardHolderName = cardHolderName;
     }
 }

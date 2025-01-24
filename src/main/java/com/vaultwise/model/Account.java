@@ -1,5 +1,6 @@
 package com.vaultwise.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -12,13 +13,18 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "account_number", nullable = false)
     private String accountNumber;
+
+    @Column(name = "balance", nullable = false)
     private BigDecimal balance;
 
     @OneToMany(mappedBy = "account")
+    @JsonIgnore
     private List<Card> cards;
 
     @OneToMany(mappedBy = "account")
+    @JsonIgnore
     private List<Payment> payments;
 
     // Getters and setters

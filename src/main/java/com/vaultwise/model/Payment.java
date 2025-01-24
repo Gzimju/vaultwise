@@ -1,5 +1,7 @@
 package com.vaultwise.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -11,12 +13,11 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "amount", nullable = false)
     private BigDecimal amount;
-    private String description;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @Column(name = "description", nullable = false)
+    private String description;
 
 
     @ManyToOne
