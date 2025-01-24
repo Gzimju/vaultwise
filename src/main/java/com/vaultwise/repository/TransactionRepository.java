@@ -3,6 +3,9 @@ package com.vaultwise.repository;
 import com.vaultwise.model.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface TransactionRepository extends JpaRepository<Transaction, Long> {
+import java.util.List;
 
+public interface TransactionRepository extends JpaRepository<Transaction, Long> {
+    List<Transaction> findByAccountId(Long accountId); // Custom query to find transactions by account ID
 }
+
