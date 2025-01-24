@@ -12,23 +12,24 @@ public class Payment {
     private Long id;
 
     private BigDecimal amount;
-
-    private String description; // Description of the payment (e.g., Bill payment, Loan payment)
-
-    private Date paymentDate;
+    private String description;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User user; // Associated user making the payment
+    private User user;
+
+
+    @ManyToOne
+    @JoinColumn(name = "account_id")
+    private Account account; // The account this payment is linked to
 
     // Constructors, Getters, Setters
     public Payment() {}
 
-    public Payment(BigDecimal amount, String description, User user) {
+    public Payment(BigDecimal amount, String description, Account account) {
         this.amount = amount;
         this.description = description;
-        this.user = user;
-        this.paymentDate = new Date();
+        this.account = account;
     }
 
     public Long getId() {
@@ -55,19 +56,11 @@ public class Payment {
         this.description = description;
     }
 
-    public Date getPaymentDate() {
-        return paymentDate;
+    public Account getAccount() {
+        return account;
     }
 
-    public void setPaymentDate(Date paymentDate) {
-        this.paymentDate = paymentDate;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
+    public void setAccount(Account account) {
+        this.account = account;
     }
 }

@@ -1,6 +1,7 @@
 package com.vaultwise.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 
 @Entity
 public class Card {
@@ -9,35 +10,35 @@ public class Card {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String accountNumber;
     private String cardNumber;
+    private String cardType;
 
-    private String cardType; // E.g., "Debit", "Credit"
+    @Column(name = "expiration_date")
+    private LocalDate expirationDate;
 
-    private String expirationDate;
-
-    private String securityCode; // CVV/CVC code
+    @Column(name = "security_code")
+    private String securityCode;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user; // Associated user who owns the card
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private User user;
 
-    // Constructors, Getters, Setters
-    public Card() {}
-
-    public Card(String cardNumber, String cardType, String expirationDate, String securityCode, User user) {
-        this.cardNumber = cardNumber;
-        this.cardType = cardType;
-        this.expirationDate = expirationDate;
-        this.securityCode = securityCode;
-        this.user = user;
-    }
-
+    // Getters and Setters
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
     }
 
     public String getCardNumber() {
@@ -56,11 +57,11 @@ public class Card {
         this.cardType = cardType;
     }
 
-    public String getExpirationDate() {
+    public LocalDate getExpirationDate() {
         return expirationDate;
     }
 
-    public void setExpirationDate(String expirationDate) {
+    public void setExpirationDate(LocalDate expirationDate) {
         this.expirationDate = expirationDate;
     }
 
