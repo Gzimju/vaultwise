@@ -26,6 +26,10 @@ public class BankingService {
         this.paymentRepository = paymentRepository;
     }
 
+    public Account getAccountById(Long accountId) {
+        return accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found with ID: " + accountId));
+    }
     public Account createAccount(Account account) {
         if (account.getAccountNumber() == null || account.getAccountNumber().isEmpty()) {
             throw new IllegalArgumentException("Account number cannot be null or empty");

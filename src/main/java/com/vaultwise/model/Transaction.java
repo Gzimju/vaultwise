@@ -26,6 +26,9 @@ public class Transaction {
     @JsonIgnore
     private Account account; // Associated account for this transaction
 
+    @Transient // This field will not be persisted to the database
+    private Long accountId; // Temporary field to pass accountId in the request
+
     // Constructors, Getters, Setters
     public Transaction() {}
 
@@ -68,6 +71,14 @@ public class Transaction {
         this.transactionDate = transactionDate;
     }
 
+    public Long getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(Long accountId) {
+        this.accountId = accountId;
+    }
+
     public Account getAccount() {
         return account;
     }
@@ -75,4 +86,5 @@ public class Transaction {
     public void setAccount(Account account) {
         this.account = account;
     }
+
 }
