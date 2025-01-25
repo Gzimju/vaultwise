@@ -33,7 +33,7 @@ public class Card {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "account_id", nullable = false)
+    @JoinColumn(name = "account_id")
     private Account account;
 
     // Getters and Setters
