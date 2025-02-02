@@ -34,11 +34,21 @@ public class CardService {
     // Update an existing card
     public Card updateCard(Long id, Card updatedCard) {
         if (cardRepository.existsById(id)) {
+            // Make sure we set the ID on the updated card
             updatedCard.setId(id);
+
+            // Optionally check for required fields if needed
+            if (updatedCard.getCardNumber() == null || updatedCard.getCardType() == null ||
+                    updatedCard.getExpirationDate() == null || updatedCard.getSecurityCode() == null) {
+                throw new IllegalArgumentException("Card details cannot have null values");
+            }
+
+            // Save the updated card
             return cardRepository.save(updatedCard);
         }
         return null;
     }
+
 
     // Delete a card
     public void deleteCard(Long id) {
