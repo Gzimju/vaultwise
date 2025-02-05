@@ -1,6 +1,9 @@
 package com.vaultwise.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -13,19 +16,28 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "account_number", nullable = false)
+    @Column(name = "account_number", nullable = false, unique = true)
     private String accountNumber;
 
     @Column(name = "balance", nullable = false)
     private BigDecimal balance;
 
-    @OneToMany(mappedBy = "account")
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false) // Mandatory field
+    @JsonManagedReference
+    private User user;
+
+    @OneToMany(mappedBy = "account",cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Card> cards;
 
-    @OneToMany(mappedBy = "account")
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Payment> payments;
+
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Transaction> transactions;
 
     // Getters and setters
     public Long getId() {
@@ -67,4 +79,20 @@ public class Account {
     public void setPayments(List<Payment> payments) {
         this.payments = payments;
     }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public List<Transaction> getTransactions() {
+        return transactions;
+    }
+    public void setTransactions(List<Transaction> transactions) {
+        this.transactions = transactions;
+    }
+
 }

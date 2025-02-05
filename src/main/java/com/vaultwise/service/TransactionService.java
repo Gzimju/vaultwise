@@ -19,14 +19,8 @@ public class TransactionService {
 
     // Create a new transaction
     public Transaction createTransaction(Transaction transaction) {
-        // Check if the Account is already set, if not, fetch it by ID
-        if (transaction.getAccount() == null && transaction.getAccountId() != null) {
-            Account account = bankingService.getAccountById(transaction.getAccountId());
-            if (account != null) {
-                transaction.setAccount(account);
-            } else {
-                throw new RuntimeException("Account not found with ID: " + transaction.getAccountId());
-            }
+        if (transaction.getAccount() == null) {
+            throw new IllegalArgumentException("Transaction must have an associated account");
         }
         return transactionRepository.save(transaction);
     }

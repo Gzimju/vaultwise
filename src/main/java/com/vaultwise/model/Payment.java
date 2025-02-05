@@ -22,6 +22,7 @@ public class Payment {
 
     @ManyToOne
     @JoinColumn(name = "account_id")
+    @JsonIgnore
     private Account account; // The account this payment is linked to
 
     // Constructors, Getters, Setters

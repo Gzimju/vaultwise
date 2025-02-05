@@ -34,9 +34,16 @@ public class BankingService {
         if (account.getAccountNumber() == null || account.getAccountNumber().isEmpty()) {
             throw new IllegalArgumentException("Account number cannot be null or empty");
         }
+
+        // Check if account number already exists
+        if (accountRepository.findByAccountNumber(account.getAccountNumber()).isPresent()) {
+            throw new IllegalArgumentException("Account number already exists");
+        }
+
         if (account.getBalance() == null) {
             account.setBalance(BigDecimal.ZERO); // Default balance if not provided
         }
+
         return accountRepository.save(account);
     }
 
@@ -72,4 +79,21 @@ public class BankingService {
                 .orElseThrow(() -> new RuntimeException("Account not found"));
         return paymentRepository.findByAccount(account);
     }
+    public Account getAccountByNumber(String accountNumber) {
+        return accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+    }
+
+    public List<Account> getAllAccounts() {
+        return accountRepository.findAll();
+    }
+
+    public void deleteAccount(Long accountId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        accountRepository.delete(account);
+    }
+
+
 }

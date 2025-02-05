@@ -60,4 +60,30 @@ public class BankingController {
     public List<Payment> getPayments(@PathVariable Long accountId) {
         return bankingService.getPayments(accountId);
     }
+
+    @GetMapping("/account/{accountNumber}")
+    public ResponseEntity<Account> getAccountByNumber(@PathVariable String accountNumber) {
+        Account account = bankingService.getAccountByNumber(accountNumber);
+        return ResponseEntity.ok(account);
+    }
+
+    @GetMapping("/account/id/{accountId}")
+    public ResponseEntity<Account> getAccountById(@PathVariable Long accountId) {
+        Account account = bankingService.getAccountById(accountId);
+        return ResponseEntity.ok(account);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Account>> getAllAccounts() {
+        List<Account> accounts = bankingService.getAllAccounts();
+        return ResponseEntity.ok(accounts);
+    }
+
+    @DeleteMapping("/accounts/{accountId}")
+    public ResponseEntity<String> deleteAccount(@PathVariable Long accountId) {
+        bankingService.deleteAccount(accountId);
+        return ResponseEntity.ok("Account deleted successfully!");
+    }
+
+
 }

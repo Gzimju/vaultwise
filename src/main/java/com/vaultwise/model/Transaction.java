@@ -1,6 +1,5 @@
 package com.vaultwise.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -12,22 +11,18 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "amount",nullable = false)
+    @Column(nullable = false)
     private BigDecimal amount;
 
-    @Column(name = "type", nullable = false)
+    @Column(nullable = false)
     private String type; // Deposit, Withdrawal, etc.
 
     @Column(name = "transaction_date", nullable = false)
     private Date transactionDate;
 
     @ManyToOne
-    @JoinColumn(name = "account_id")
-    @JsonIgnore
+    @JoinColumn(name = "account_id", nullable = false)
     private Account account; // Associated account for this transaction
-
-    @Transient // This field will not be persisted to the database
-    private Long accountId; // Temporary field to pass accountId in the request
 
     // Constructors, Getters, Setters
     public Transaction() {}
@@ -71,14 +66,6 @@ public class Transaction {
         this.transactionDate = transactionDate;
     }
 
-    public Long getAccountId() {
-        return accountId;
-    }
-
-    public void setAccountId(Long accountId) {
-        this.accountId = accountId;
-    }
-
     public Account getAccount() {
         return account;
     }
@@ -86,5 +73,4 @@ public class Transaction {
     public void setAccount(Account account) {
         this.account = account;
     }
-
 }
