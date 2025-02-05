@@ -34,6 +34,14 @@ public class UserService {
         return userOptional.orElse(null); // Return null if user is not found
     }
 
+    public User updateUser(Long id, User user) {
+        if (userRepository.existsById(id)) {
+            user.setId(id);  // Make sure the user ID is preserved
+            return userRepository.save(user);
+        }
+        return null; // If user doesn't exist, return null
+    }
+
     // Delete a user by ID
     public void deleteUser(Long id) {
         userRepository.deleteById(id);

@@ -65,6 +65,22 @@ public class BankingService {
         account.setBalance(account.getBalance().subtract(amount));
         accountRepository.save(account);
     }
+    public Account updateAccount(Long accountId, Account updatedAccount) {
+        return accountRepository.findById(accountId).map(existingAccount -> {
+            if (updatedAccount.getAccountNumber() != null) {
+                existingAccount.setAccountNumber(updatedAccount.getAccountNumber());
+            }
+            if (updatedAccount.getBalance() != null) {
+                existingAccount.setBalance(updatedAccount.getBalance());
+            }
+            if (updatedAccount.getUser() != null) {
+                existingAccount.setUser(updatedAccount.getUser());
+            }
+            return accountRepository.save(existingAccount);
+        }).orElseThrow(() -> new RuntimeException("Account not found with ID: " + accountId));
+    }
+
+
 
     // Get Cards for an Account
     public List<Card> getCards(Long accountId) {

@@ -40,6 +40,12 @@ public class UserController {
         return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+        User updatedUser = userService.updateUser(id, user);
+        return updatedUser != null ? ResponseEntity.ok(updatedUser) : ResponseEntity.notFound().build();
+    }
+
     // Delete a user by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {

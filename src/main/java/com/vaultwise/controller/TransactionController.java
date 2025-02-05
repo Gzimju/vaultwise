@@ -36,6 +36,17 @@ public class TransactionController {
         return ResponseEntity.ok(transaction);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Transaction> updateTransaction(@PathVariable Long id, @RequestBody Transaction transaction) {
+        Transaction updatedTransaction = transactionService.updateTransaction(id, transaction);
+
+        if (updatedTransaction == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(updatedTransaction);
+    }
+
     // Delete a transaction by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {

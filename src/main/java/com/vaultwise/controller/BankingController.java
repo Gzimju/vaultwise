@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -83,6 +82,14 @@ public class BankingController {
     public ResponseEntity<String> deleteAccount(@PathVariable Long accountId) {
         bankingService.deleteAccount(accountId);
         return ResponseEntity.ok("Account deleted successfully!");
+    }
+
+    @PutMapping("/accounts/{accountId}")
+    public ResponseEntity<Account> updateAccount(
+            @PathVariable Long accountId,
+            @RequestBody Account updatedAccount) {  // Ensure @RequestBody annotation is present
+        Account account = bankingService.updateAccount(accountId, updatedAccount);
+        return ResponseEntity.ok(account);
     }
 
 

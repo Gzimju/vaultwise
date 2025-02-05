@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TransactionService {
@@ -35,6 +36,27 @@ public class TransactionService {
         return transactionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction not found with ID: " + id));
     }
+
+    public Transaction updateTransaction(Long id, Transaction transaction) {
+        // Check if the transaction exists
+        Optional<Transaction> existingTransactionOpt = transactionRepository.findById(id);
+
+        if (existingTransactionOpt.isPresent()) {
+            // Get the existing transaction
+            Transaction existingTransaction = existingTransactionOpt.get();
+
+            // Update the existing transaction details
+            existingTransaction.setAmount(transaction.getAmount());
+            existingTransaction.setType(transaction.getType());
+            existingTransaction.setTransactionDate(transaction.getTransactionDate()); // Optional if you want to update this
+
+            // Save the updated transaction and return it
+            return transactionRepository.save(existingTransaction);
+        }
+
+        return null; // If the transaction doesn't exist, return null
+    }
+
 
     // Delete a transaction by ID
     public void deleteTransaction(Long id) {

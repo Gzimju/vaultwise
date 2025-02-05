@@ -27,8 +27,9 @@ public class User {
     private String lastName;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonBackReference
+    @JsonIgnore // Prevent recursive serialization
     private List<Account> accounts;
+
 
     // Constructors
     public User() {}

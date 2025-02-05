@@ -11,9 +11,7 @@ public class Card {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "account_number",nullable = false)
-    private String accountNumber;
-    @Column(name = "card_number", nullable = false)
+    @Column(name = "card_number", nullable = false, unique = true)
     private String cardNumber;
     @Column(name = "card_type",nullable = false)
     private String cardType;
@@ -21,7 +19,7 @@ public class Card {
     @Column(name = "expiration_date", nullable = false)
     private LocalDate expirationDate;
 
-    @Column(name = "security_code", nullable = false)
+    @Column(name = "security_code", nullable = false, unique = true)
     private String securityCode;
 
     @Column(name = "card_holder_name", nullable = false)
@@ -43,14 +41,6 @@ public class Card {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getAccountNumber() {
-        return accountNumber;
-    }
-
-    public void setAccountNumber(String accountNumber) {
-        this.accountNumber = accountNumber;
     }
 
     public String getCardNumber() {

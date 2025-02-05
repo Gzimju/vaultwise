@@ -23,20 +23,19 @@ public class Account {
     private BigDecimal balance;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false) // Mandatory field
-    @JsonManagedReference
+    @JoinColumn(name = "user_id", nullable = false)// Prevent the infinite loop by ignoring the accounts field
     private User user;
 
-    @OneToMany(mappedBy = "account",cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore // Prevent recursion for child entities if not needed
     private List<Card> cards;
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
+    @JsonIgnore // Prevent recursion for child entities if not needed
     private List<Payment> payments;
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
+    @JsonIgnore // Prevent recursion for child entities if not needed
     private List<Transaction> transactions;
 
     // Getters and setters
