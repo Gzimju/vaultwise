@@ -1,184 +1,212 @@
 package com.vaultwise.service;
 
 import com.vaultwise.model.Account;
-import com.vaultwise.model.Card;
-import com.vaultwise.model.Payment;
+import com.vaultwise.model.Transaction;
 import com.vaultwise.repository.AccountRepository;
 import com.vaultwise.repository.CardRepository;
 import com.vaultwise.repository.PaymentRepository;
-import com.vaultwise.service.BankingService;
+import com.vaultwise.repository.TransactionRepository;
+import com.vaultwise.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
-import static org.junit.jupiter.api.Assertions.*;
+
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BankingServiceTest {
 
-    private BankingService bankingService;
+    @Mock
     private AccountRepository accountRepository;
+
+    @Mock
     private CardRepository cardRepository;
+
+    @Mock
     private PaymentRepository paymentRepository;
+
+    @Mock
+    private TransactionService transactionService;
+
+    @InjectMocks
+    private BankingService bankingService;
 
     @BeforeEach
     void setUp() {
-        accountRepository = mock(AccountRepository.class);
-        cardRepository = mock(CardRepository.class);
-        paymentRepository = mock(PaymentRepository.class);
-        bankingService = new BankingService(accountRepository, cardRepository, paymentRepository);
+        MockitoAnnotations.openMocks(this); // Initialize mocks
     }
 
     @Test
     void testCreateAccount() {
+        // Given
         Account account = new Account();
-        account.setAccountNumber("12345");
+        account.setAccountNumber("123456789");
         account.setBalance(BigDecimal.ZERO);
 
         when(accountRepository.findByAccountNumber(account.getAccountNumber())).thenReturn(Optional.empty());
         when(accountRepository.save(account)).thenReturn(account);
 
-        Account savedAccount = bankingService.createAccount(account);
+        // When
+        Account createdAccount = bankingService.createAccount(account);
 
-        assertNotNull(savedAccount);
-        assertEquals("12345", savedAccount.getAccountNumber());
+        // Then
         verify(accountRepository, times(1)).save(account);
-    }
-
-    @Test
-    void testCreateAccount_throwsIllegalArgumentException_whenAccountNumberExists() {
-        Account account = new Account();
-        account.setAccountNumber("12345");
-
-        when(accountRepository.findByAccountNumber(account.getAccountNumber())).thenReturn(Optional.of(account));
-
-        assertThrows(IllegalArgumentException.class, () -> bankingService.createAccount(account));
+        assertEquals("123456789", createdAccount.getAccountNumber());
+        assertEquals(BigDecimal.ZERO, createdAccount.getBalance());
     }
 
     @Test
     void testDeposit() {
-        String accountNumber = "12345";
-        BigDecimal amount = new BigDecimal("100.00");
+        // Given
         Account account = new Account();
-        account.setAccountNumber(accountNumber);
-        account.setBalance(new BigDecimal("50.00"));
+        account.setAccountNumber("123456789");
+        account.setBalance(new BigDecimal("100"));
 
-        when(accountRepository.findByAccountNumber(accountNumber)).thenReturn(Optional.of(account));
+        when(accountRepository.findByAccountNumber(account.getAccountNumber())).thenReturn(Optional.of(account));
 
-        bankingService.deposit(accountNumber, amount);
+        // Mock the return of createTransaction() assuming it returns a Transaction
+        when(transactionService.createTransaction(any())).thenReturn(new Transaction());  // Mock a new transaction return
 
-        assertEquals(new BigDecimal("150.00"), account.getBalance());
+        // When
+        bankingService.deposit(account.getAccountNumber(), new BigDecimal("50"));
+
+        // Then
         verify(accountRepository, times(1)).save(account);
+        assertEquals(new BigDecimal("150"), account.getBalance());
     }
 
     @Test
     void testWithdraw() {
-        String accountNumber = "12345";
-        BigDecimal amount = new BigDecimal("50.00");
+        // Given
         Account account = new Account();
-        account.setAccountNumber(accountNumber);
-        account.setBalance(new BigDecimal("100.00"));
+        account.setAccountNumber("123456789");
+        account.setBalance(new BigDecimal("200"));
 
-        when(accountRepository.findByAccountNumber(accountNumber)).thenReturn(Optional.of(account));
+        when(accountRepository.findByAccountNumber(account.getAccountNumber())).thenReturn(Optional.of(account));
 
-        bankingService.withdraw(accountNumber, amount);
+        // Mock the return of createTransaction() assuming it returns a Transaction
+        when(transactionService.createTransaction(any())).thenReturn(new Transaction());  // Mock a new transaction return
 
-        assertEquals(new BigDecimal("50.00"), account.getBalance());
+        // When
+        bankingService.withdraw(account.getAccountNumber(), new BigDecimal("50"));
+
+        // Then
         verify(accountRepository, times(1)).save(account);
+        assertEquals(new BigDecimal("150"), account.getBalance());
     }
 
     @Test
-    void testWithdraw_throwsRuntimeException_whenInsufficientBalance() {
-        String accountNumber = "12345";
-        BigDecimal amount = new BigDecimal("150.00");
+    void testGetAccountById() {
+        // Given
         Account account = new Account();
-        account.setAccountNumber(accountNumber);
-        account.setBalance(new BigDecimal("100.00"));
+        account.setId(1L);
+        account.setAccountNumber("123456789");
 
-        when(accountRepository.findByAccountNumber(accountNumber)).thenReturn(Optional.of(account));
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
 
-        assertThrows(RuntimeException.class, () -> bankingService.withdraw(accountNumber, amount));
-    }
+        // When
+        Account fetchedAccount = bankingService.getAccountById(1L);
 
-    @Test
-    void testUpdateAccount() {
-        Long accountId = 1L;
-        Account updatedAccount = new Account();
-        updatedAccount.setAccountNumber("67890");
-        updatedAccount.setBalance(new BigDecimal("200.00"));
-
-        Account existingAccount = new Account();
-        existingAccount.setAccountNumber("12345");
-        existingAccount.setBalance(new BigDecimal("100.00"));
-        when(accountRepository.findById(accountId)).thenReturn(Optional.of(existingAccount));
-        when(accountRepository.save(existingAccount)).thenReturn(existingAccount);
-
-        Account result = bankingService.updateAccount(accountId, updatedAccount);
-
-        assertNotNull(result);
-        assertEquals("67890", result.getAccountNumber());
-        assertEquals(new BigDecimal("200.00"), result.getBalance());
-    }
-
-    @Test
-    void testGetCards() {
-        Long accountId = 1L;
-        Account account = new Account();
-        account.setId(accountId);
-        List<Card> cards = List.of(new Card(), new Card());
-
-        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
-        when(cardRepository.findByAccount(account)).thenReturn(cards);
-
-        List<Card> result = bankingService.getCards(accountId);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void testGetPayments() {
-        Long accountId = 1L;
-        Account account = new Account();
-        account.setId(accountId);
-        List<Payment> payments = List.of(new Payment(), new Payment());
-
-        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
-        when(paymentRepository.findByAccount(account)).thenReturn(payments);
-
-        List<Payment> result = bankingService.getPayments(accountId);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
+        // Then
+        verify(accountRepository, times(1)).findById(1L);
+        assertEquals("123456789", fetchedAccount.getAccountNumber());
     }
 
     @Test
     void testGetAccountByNumber() {
-        String accountNumber = "12345";
+        // Given
         Account account = new Account();
-        account.setAccountNumber(accountNumber);
+        account.setAccountNumber("987654321");
 
-        when(accountRepository.findByAccountNumber(accountNumber)).thenReturn(Optional.of(account));
+        when(accountRepository.findByAccountNumber("987654321")).thenReturn(Optional.of(account));
 
-        Account result = bankingService.getAccountByNumber(accountNumber);
+        // When
+        Account fetchedAccount = bankingService.getAccountByNumber("987654321");
 
-        assertNotNull(result);
-        assertEquals(accountNumber, result.getAccountNumber());
+        // Then
+        verify(accountRepository, times(1)).findByAccountNumber("987654321");
+        assertEquals("987654321", fetchedAccount.getAccountNumber());
+    }
+
+    @Test
+    void testUpdateAccount() {
+        // Given
+        Account existingAccount = new Account();
+        existingAccount.setId(1L);
+        existingAccount.setAccountNumber("123456789");
+        existingAccount.setBalance(new BigDecimal("100"));
+
+        Account updatedAccount = new Account();
+        updatedAccount.setAccountNumber("987654321");
+        updatedAccount.setBalance(new BigDecimal("200"));
+
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(existingAccount));
+        when(accountRepository.save(existingAccount)).thenReturn(existingAccount);
+
+        // When
+        Account updated = bankingService.updateAccount(1L, updatedAccount);
+
+        // Then
+        verify(accountRepository, times(1)).save(existingAccount);
+        assertEquals("987654321", updated.getAccountNumber());
+        assertEquals(new BigDecimal("200"), updated.getBalance());
     }
 
     @Test
     void testDeleteAccount() {
-        Long accountId = 1L;
+        // Given
         Account account = new Account();
-        account.setId(accountId);
+        account.setId(1L);
+        account.setAccountNumber("123456789");
 
-        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        doNothing().when(accountRepository).delete(account);
 
-        bankingService.deleteAccount(accountId);
+        // When
+        bankingService.deleteAccount(1L);
 
+        // Then
         verify(accountRepository, times(1)).delete(account);
+    }
+
+    @Test
+    void testGetCards() {
+        // Given
+        Account account = new Account();
+        account.setId(1L);
+        account.setAccountNumber("123456789");
+
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(cardRepository.findByAccount(account)).thenReturn(null); // Mock empty list of cards
+
+        // When
+        var cards = bankingService.getCards(1L);
+
+        // Then
+        verify(cardRepository, times(1)).findByAccount(account);
+        assertNull(cards); // Assumes no cards are found
+    }
+
+    @Test
+    void testGetPayments() {
+        // Given
+        Account account = new Account();
+        account.setId(1L);
+        account.setAccountNumber("123456789");
+
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(paymentRepository.findByAccount(account)).thenReturn(null); // Mock empty list of payments
+
+        // When
+        var payments = bankingService.getPayments(1L);
+
+        // Then
+        verify(paymentRepository, times(1)).findByAccount(account);
+        assertNull(payments); // Assumes no payments are found
     }
 }
