@@ -55,7 +55,7 @@ class BankingControllerTest {
         bankingRequest.setAccountNumber("12345");
         bankingRequest.setAmount(new BigDecimal("100.00"));
 
-        doNothing().when(bankingService).deposit(bankingRequest.getAccountNumber(), bankingRequest.getAmount());
+        doNothing().when(bankingService).deposit(anyString(), any(BigDecimal.class));
 
         mockMvc.perform(post("/api/banking/deposit")
                         .contentType("application/json")
@@ -70,7 +70,7 @@ class BankingControllerTest {
         bankingRequest.setAccountNumber("12345");
         bankingRequest.setAmount(new BigDecimal("50.00"));
 
-        doNothing().when(bankingService).withdraw(bankingRequest.getAccountNumber(), bankingRequest.getAmount());
+        doNothing().when(bankingService).withdraw(anyString(), any(BigDecimal.class));
 
         mockMvc.perform(post("/api/banking/withdraw")
                         .contentType("application/json")
