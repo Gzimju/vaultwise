@@ -7,7 +7,7 @@ VaultWise is a secure banking application built with Spring Boot that simulates 
 - **User Management**: Register, update, and delete users.
 - **Account Management**: Create and manage accounts.
 - **Deposit & Withdrawal**: Perform deposits and withdrawals directly on accounts.
-- **Transaction**: Only examples for creating and deleting transactions.
+- **Transaction**: Creating transactions for deposits and withdrawals
 - **Card Management**: Retrieve associated cards for an account.
 - **Payment Tracking**: View payment history for an account.
 ## Technologies Used
