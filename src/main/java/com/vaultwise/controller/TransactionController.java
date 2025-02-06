@@ -3,6 +3,7 @@ package com.vaultwise.controller;
 import com.vaultwise.model.Transaction;
 import com.vaultwise.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,7 +51,12 @@ public class TransactionController {
     // Delete a transaction by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
-        transactionService.deleteTransaction(id);
-        return ResponseEntity.noContent().build();
+        try {
+            transactionService.deleteTransaction(id);
+            return ResponseEntity.noContent().build(); // Success: No content
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Transaction not found
+        }
     }
+
 }

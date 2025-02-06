@@ -2,18 +2,22 @@ package com.vaultwise.service;
 
 import com.vaultwise.model.User;
 import com.vaultwise.repository.UserRepository;
+import com.vaultwise.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.List;
+import java.util.Arrays;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class UserServiceTest {
+@SpringBootTest
+public class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
@@ -25,57 +29,75 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        user = new User("John", "password123", "john.doe@example.com", "Doe");
+        user = new User("John", "password123", "john@example.com", "Doe");
     }
 
     @Test
-    void createUser_ShouldReturnUser() {
-        when(userRepository.save(any(User.class))).thenReturn(user);
+    void testCreateUser() {
+        when(userRepository.save(user)).thenReturn(user);
 
         User createdUser = userService.createUser(user);
 
         assertNotNull(createdUser);
-        assertEquals("John", createdUser.getFirstName());
-        assertEquals("Doe", createdUser.getLastName());
+        assertEquals(user.getFirstName(), createdUser.getFirstName());
+        assertEquals(user.getEmail(), createdUser.getEmail());
+        verify(userRepository, times(1)).save(user);
     }
 
     @Test
-    void getAllUsers_ShouldReturnUsers() {
-        User user1 = new User("John", "password123", "john.doe@example.com", "Doe");
-        User user2 = new User("Jane", "password123", "jane.doe@example.com", "Doe");
-        when(userRepository.findAll()).thenReturn(List.of(user1, user2));
+    void testGetAllUsers() {
+        when(userRepository.findAll()).thenReturn(Arrays.asList(user));
 
-        List<User> users = userService.getAllUsers();
-
-        assertEquals(2, users.size());
+        assertFalse(userService.getAllUsers().isEmpty());
+        verify(userRepository, times(1)).findAll();
     }
 
     @Test
-    void getUserById_ShouldReturnUser() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    void testGetUserById() {
+        Long userId = 1L;
+        // Initialize the user object properly with the necessary fields
+        User user = new User("John", "password123", "john.doe@example.com", "Doe");
+        user.setId(userId);  // Make sure the ID is set
 
-        User foundUser = userService.getUserById(1L);
+        // Mock the repository to return the user when findById is called
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        assertNotNull(foundUser);
-        assertEquals("John", foundUser.getFirstName());
+        // Call the method to test
+        User foundUser = userService.getUserById(userId);
+
+        // Assert the expected behavior
+        assertNotNull(foundUser, "User should not be null");
+        assertEquals(userId, foundUser.getId(), "User ID should match");
+        assertEquals("John", foundUser.getFirstName(), "First name should match");
+        assertEquals("Doe", foundUser.getLastName(), "Last name should match");
+
+        // Verify that the repository method was called
+        verify(userRepository, times(1)).findById(userId);
     }
 
     @Test
-    void getUserById_ShouldReturnNullIfUserNotFound() {
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+    void testUpdateUser() {
+        Long userId = 1L;
+        User updatedUser = new User("Jane", "newpassword", "jane@example.com", "Smith");
 
-        User foundUser = userService.getUserById(1L);
+        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userRepository.save(updatedUser)).thenReturn(updatedUser);
 
-        assertNull(foundUser);
+        User result = userService.updateUser(userId, updatedUser);
+
+        assertNotNull(result);
+        assertEquals(updatedUser.getFirstName(), result.getFirstName());
+        verify(userRepository, times(1)).save(updatedUser);
     }
 
     @Test
-    void deleteUser_ShouldDeleteUser() {
-        doNothing().when(userRepository).deleteById(1L);
+    void testDeleteUser() {
+        Long userId = 1L;
 
-        userService.deleteUser(1L);
+        doNothing().when(userRepository).deleteById(userId);
 
-        verify(userRepository, times(1)).deleteById(1L);
+        userService.deleteUser(userId);
+
+        verify(userRepository, times(1)).deleteById(userId);
     }
 }

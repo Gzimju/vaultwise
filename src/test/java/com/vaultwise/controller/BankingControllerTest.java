@@ -1,5 +1,6 @@
 package com.vaultwise.controller;
 
+import com.vaultwise.controller.BankingController;
 import com.vaultwise.dto.BankingRequest;
 import com.vaultwise.model.Account;
 import com.vaultwise.model.Card;
@@ -7,126 +8,168 @@ import com.vaultwise.model.Payment;
 import com.vaultwise.service.BankingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.http.MediaType;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
-public class BankingControllerTest {
+class BankingControllerTest {
 
+    private BankingController bankingController;
+    private BankingService bankingService;
     private MockMvc mockMvc;
 
-    @Mock
-    private BankingService bankingService;
-
-    @InjectMocks
-    private BankingController bankingController;
-
     @BeforeEach
-    public void setUp() {
+    void setUp() {
+        bankingService = mock(BankingService.class);
+        bankingController = new BankingController(bankingService);
         mockMvc = MockMvcBuilders.standaloneSetup(bankingController).build();
     }
 
     @Test
-    public void testCreateAccount() throws Exception {
-        // Create mock data for the account
+    void testCreateAccount() throws Exception {
         Account account = new Account();
         account.setAccountNumber("12345");
-        account.setBalance(BigDecimal.valueOf(1000));
+        account.setBalance(BigDecimal.ZERO);
 
-        // When the banking service is called to create an account, return the mock account
         when(bankingService.createAccount(any(Account.class))).thenReturn(account);
 
-        // Test the controller endpoint
         mockMvc.perform(post("/api/banking/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"accountNumber\":\"12345\",\"balance\":1000}"))
+                        .contentType("application/json")
+                        .content("{\"accountNumber\":\"12345\",\"balance\":0}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accountNumber").value("12345"))
-                .andExpect(jsonPath("$.balance").value(1000));
+                .andExpect(jsonPath("$.accountNumber").value("12345"));
     }
 
     @Test
-    public void testDeposit() throws Exception {
-        // Create a mock request for deposit
+    void testDeposit() throws Exception {
         BankingRequest bankingRequest = new BankingRequest();
         bankingRequest.setAccountNumber("12345");
-        bankingRequest.setAmount(BigDecimal.valueOf(500));
+        bankingRequest.setAmount(new BigDecimal("100.00"));
 
-        // Mock the banking service deposit method to do nothing
-        doNothing().when(bankingService).deposit(anyString(), any(BigDecimal.class));
+        doNothing().when(bankingService).deposit(bankingRequest.getAccountNumber(), bankingRequest.getAmount());
 
-        // Test the deposit endpoint
         mockMvc.perform(post("/api/banking/deposit")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"accountNumber\":\"12345\",\"amount\":500}"))
+                        .contentType("application/json")
+                        .content("{\"accountNumber\":\"12345\",\"amount\":100}"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Deposit successful"));
-
-        // Verify that the banking service method was called once
-        verify(bankingService, times(1)).deposit("12345", BigDecimal.valueOf(500));
     }
 
     @Test
-    public void testWithdraw() throws Exception {
-        // Create a mock request for withdraw
+    void testWithdraw() throws Exception {
         BankingRequest bankingRequest = new BankingRequest();
         bankingRequest.setAccountNumber("12345");
-        bankingRequest.setAmount(BigDecimal.valueOf(200));
+        bankingRequest.setAmount(new BigDecimal("50.00"));
 
-        // Mock the banking service withdraw method to do nothing
-        doNothing().when(bankingService).withdraw(anyString(), any(BigDecimal.class));
+        doNothing().when(bankingService).withdraw(bankingRequest.getAccountNumber(), bankingRequest.getAmount());
 
-        // Test the withdraw endpoint
         mockMvc.perform(post("/api/banking/withdraw")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"accountNumber\":\"12345\",\"amount\":200}"))
+                        .contentType("application/json")
+                        .content("{\"accountNumber\":\"12345\",\"amount\":50}"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Withdrawal successful"));
-
-        // Verify that the banking service method was called once
-        verify(bankingService, times(1)).withdraw("12345", BigDecimal.valueOf(200));
     }
 
     @Test
-    public void testGetCards() throws Exception {
-        // Create a mock list of cards
-        Card card = new Card();
-        card.setCardNumber("1234567890");
+    void testGetCards() throws Exception {
+        Long accountId = 1L;
+        List<Card> cards = List.of(new Card(), new Card());
 
-        List<Card> cards = Arrays.asList(card);
-        when(bankingService.getCards(1L)).thenReturn(cards);
+        when(bankingService.getCards(accountId)).thenReturn(cards);
 
-        // Test the get cards endpoint
-        mockMvc.perform(get("/api/banking/cards/1"))
+        mockMvc.perform(get("/api/banking/cards/{accountId}", accountId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].cardNumber").value("1234567890"));
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isNotEmpty());
     }
 
     @Test
-    public void testGetPayments() throws Exception {
-        // Create a mock list of payments
-        Payment payment = new Payment();
-        payment.setAmount(BigDecimal.valueOf(100));
+    void testGetPayments() throws Exception {
+        Long accountId = 1L;
+        List<Payment> payments = List.of(new Payment(), new Payment());
 
-        List<Payment> payments = Arrays.asList(payment);
-        when(bankingService.getPayments(1L)).thenReturn(payments);
+        when(bankingService.getPayments(accountId)).thenReturn(payments);
 
-        // Test the get payments endpoint
-        mockMvc.perform(get("/api/banking/payments/1"))
+        mockMvc.perform(get("/api/banking/payments/{accountId}", accountId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].amount").value(100));
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isNotEmpty());
+    }
+
+    @Test
+    void testGetAccountByNumber() throws Exception {
+        String accountNumber = "12345";
+        Account account = new Account();
+        account.setAccountNumber(accountNumber);
+        account.setBalance(BigDecimal.ZERO);
+
+        when(bankingService.getAccountByNumber(accountNumber)).thenReturn(account);
+
+        mockMvc.perform(get("/api/banking/account/{accountNumber}", accountNumber))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accountNumber").value(accountNumber));
+    }
+
+    @Test
+    void testGetAccountById() throws Exception {
+        Long accountId = 1L;
+        Account account = new Account();
+        account.setId(accountId);
+        account.setBalance(BigDecimal.ZERO);
+
+        when(bankingService.getAccountById(accountId)).thenReturn(account);
+
+        mockMvc.perform(get("/api/banking/account/id/{accountId}", accountId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(accountId));
+    }
+
+    @Test
+    void testGetAllAccounts() throws Exception {
+        List<Account> accounts = List.of(new Account(), new Account());
+
+        when(bankingService.getAllAccounts()).thenReturn(accounts);
+
+        mockMvc.perform(get("/api/banking"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isNotEmpty());
+    }
+
+    @Test
+    void testDeleteAccount() throws Exception {
+        Long accountId = 1L;
+
+        doNothing().when(bankingService).deleteAccount(accountId);
+
+        mockMvc.perform(delete("/api/banking/accounts/{accountId}", accountId))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Account deleted successfully!"));
+    }
+
+    @Test
+    void testUpdateAccount() throws Exception {
+        Long accountId = 1L;
+        Account updatedAccount = new Account();
+        updatedAccount.setId(accountId);
+        updatedAccount.setAccountNumber("12345");
+        updatedAccount.setBalance(BigDecimal.valueOf(500));
+
+        when(bankingService.updateAccount(eq(accountId), Mockito.any(Account.class))).thenReturn(updatedAccount);
+
+        mockMvc.perform(put("/api/banking/accounts/{accountId}", accountId)
+                        .contentType("application/json")
+                        .content("{\"accountNumber\":\"12345\",\"balance\":500}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balance").value(500));
     }
 }

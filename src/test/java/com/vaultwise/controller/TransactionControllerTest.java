@@ -1,25 +1,31 @@
 package com.vaultwise.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vaultwise.model.Transaction;
 import com.vaultwise.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
 class TransactionControllerTest {
+
+    private MockMvc mockMvc;
 
     @Mock
     private TransactionService transactionService;
@@ -27,69 +33,73 @@ class TransactionControllerTest {
     @InjectMocks
     private TransactionController transactionController;
 
-    private Transaction transaction;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        transaction = new Transaction();
-        transaction.setId(1L);
-        transaction.setAmount(new BigDecimal("100.00"));
-        transaction.setType("Deposit");
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(transactionController).build();
     }
 
     @Test
-    void testCreateTransaction() {
+    void testCreateTransaction() throws Exception {
+        Transaction transaction = new Transaction(new BigDecimal("100.00"), "Deposit", null);
+        transaction.setTransactionDate(new Date());
+
         when(transactionService.createTransaction(any(Transaction.class))).thenReturn(transaction);
 
-        ResponseEntity<Transaction> response = transactionController.createTransaction(transaction);
-
-        assertNotNull(response);
-        assertNotNull(response.getBody());
-        assertEquals(1L, response.getBody().getId());
-        verify(transactionService, times(1)).createTransaction(transaction);
+        mockMvc.perform(post("/api/transactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(transaction)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.amount").value(100.00))
+                .andExpect(jsonPath("$.type").value("Deposit"));
     }
 
     @Test
-    void testGetAllTransactions() {
-        List<Transaction> transactions = Arrays.asList(transaction);
+    void testGetAllTransactions() throws Exception {
+        List<Transaction> transactions = Arrays.asList(
+                new Transaction(new BigDecimal("50.00"), "Withdrawal", null),
+                new Transaction(new BigDecimal("200.00"), "Deposit", null)
+        );
+
         when(transactionService.getAllTransactions()).thenReturn(transactions);
 
-        ResponseEntity<List<Transaction>> response = transactionController.getAllTransactions();
-
-        assertNotNull(response);
-        assertFalse(response.getBody().isEmpty());
-        assertEquals(1, response.getBody().size());
-        verify(transactionService, times(1)).getAllTransactions();
+        mockMvc.perform(get("/api/transactions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].amount").value(50.00))
+                .andExpect(jsonPath("$[1].amount").value(200.00));
     }
 
     @Test
-    void testGetTransactionById_Success() {
+    void testGetTransactionById() throws Exception {
+        Transaction transaction = new Transaction(new BigDecimal("75.00"), "Deposit", null);
         when(transactionService.getTransactionById(1L)).thenReturn(transaction);
 
-        ResponseEntity<Transaction> response = transactionController.getTransactionById(1L);
-
-        assertNotNull(response);
-        assertNotNull(response.getBody());
-        assertEquals(1L, response.getBody().getId());
-        verify(transactionService, times(1)).getTransactionById(1L);
+        mockMvc.perform(get("/api/transactions/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.amount").value(75.00))
+                .andExpect(jsonPath("$.type").value("Deposit"));
     }
 
     @Test
-    void testGetTransactionById_NotFound() {
-        when(transactionService.getTransactionById(2L)).thenThrow(new RuntimeException("Transaction not found with ID: 2"));
+    void testUpdateTransaction() throws Exception {
+        Transaction updatedTransaction = new Transaction(new BigDecimal("120.00"), "Deposit", null);
+        when(transactionService.updateTransaction(eq(1L), any(Transaction.class))).thenReturn(updatedTransaction);
 
-        Exception exception = assertThrows(RuntimeException.class, () -> transactionController.getTransactionById(2L));
-        assertEquals("Transaction not found with ID: 2", exception.getMessage());
+        mockMvc.perform(put("/api/transactions/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedTransaction)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.amount").value(120.00))
+                .andExpect(jsonPath("$.type").value("Deposit"));
     }
 
     @Test
-    void testDeleteTransaction() {
+    void testDeleteTransaction() throws Exception {
         doNothing().when(transactionService).deleteTransaction(1L);
 
-        ResponseEntity<Void> response = transactionController.deleteTransaction(1L);
-
-        assertNotNull(response);
-        assertEquals(204, response.getStatusCodeValue());
-        verify(transactionService, times(1)).deleteTransaction(1L);
+        mockMvc.perform(delete("/api/transactions/1"))
+                .andExpect(status().isNoContent());
     }
 }

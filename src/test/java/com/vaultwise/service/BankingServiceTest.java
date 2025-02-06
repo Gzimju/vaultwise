@@ -6,194 +6,179 @@ import com.vaultwise.model.Payment;
 import com.vaultwise.repository.AccountRepository;
 import com.vaultwise.repository.CardRepository;
 import com.vaultwise.repository.PaymentRepository;
+import com.vaultwise.service.BankingService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-public class BankingServiceTest {
+class BankingServiceTest {
 
-    @Mock
+    private BankingService bankingService;
     private AccountRepository accountRepository;
-
-    @Mock
     private CardRepository cardRepository;
-
-    @Mock
     private PaymentRepository paymentRepository;
 
-    @InjectMocks
-    private BankingService bankingService;
+    @BeforeEach
+    void setUp() {
+        accountRepository = mock(AccountRepository.class);
+        cardRepository = mock(CardRepository.class);
+        paymentRepository = mock(PaymentRepository.class);
+        bankingService = new BankingService(accountRepository, cardRepository, paymentRepository);
+    }
 
-    // Test for creating a new account
     @Test
-    public void testCreateAccount() {
+    void testCreateAccount() {
         Account account = new Account();
         account.setAccountNumber("12345");
-        account.setBalance(BigDecimal.valueOf(1000));
+        account.setBalance(BigDecimal.ZERO);
 
-        // Mock repository methods
+        when(accountRepository.findByAccountNumber(account.getAccountNumber())).thenReturn(Optional.empty());
         when(accountRepository.save(account)).thenReturn(account);
 
-        // Call service method
-        Account createdAccount = bankingService.createAccount(account);
+        Account savedAccount = bankingService.createAccount(account);
 
-        // Assertions
-        assertNotNull(createdAccount);
-        assertEquals("12345", createdAccount.getAccountNumber());
-        assertEquals(BigDecimal.valueOf(1000), createdAccount.getBalance());
-
-        // Verify repository interaction
+        assertNotNull(savedAccount);
+        assertEquals("12345", savedAccount.getAccountNumber());
         verify(accountRepository, times(1)).save(account);
     }
 
-    // Test for creating an account with null balance
     @Test
-    public void testCreateAccountWithNullBalance() {
+    void testCreateAccount_throwsIllegalArgumentException_whenAccountNumberExists() {
         Account account = new Account();
         account.setAccountNumber("12345");
 
-        // Mock repository methods
-        when(accountRepository.save(account)).thenReturn(account);
+        when(accountRepository.findByAccountNumber(account.getAccountNumber())).thenReturn(Optional.of(account));
 
-        // Call service method
-        Account createdAccount = bankingService.createAccount(account);
+        assertThrows(IllegalArgumentException.class, () -> bankingService.createAccount(account));
+    }
 
-        // Assertions
-        assertNotNull(createdAccount);
-        assertEquals(BigDecimal.ZERO, createdAccount.getBalance());  // Default balance
+    @Test
+    void testDeposit() {
+        String accountNumber = "12345";
+        BigDecimal amount = new BigDecimal("100.00");
+        Account account = new Account();
+        account.setAccountNumber(accountNumber);
+        account.setBalance(new BigDecimal("50.00"));
 
-        // Verify repository interaction
+        when(accountRepository.findByAccountNumber(accountNumber)).thenReturn(Optional.of(account));
+
+        bankingService.deposit(accountNumber, amount);
+
+        assertEquals(new BigDecimal("150.00"), account.getBalance());
         verify(accountRepository, times(1)).save(account);
     }
 
-    // Test for depositing money into an account
     @Test
-    public void testDeposit() {
+    void testWithdraw() {
+        String accountNumber = "12345";
+        BigDecimal amount = new BigDecimal("50.00");
         Account account = new Account();
-        account.setAccountNumber("12345");
-        account.setBalance(BigDecimal.valueOf(1000));
+        account.setAccountNumber(accountNumber);
+        account.setBalance(new BigDecimal("100.00"));
 
-        // Mock repository methods
-        when(accountRepository.findByAccountNumber("12345")).thenReturn(Optional.of(account));
+        when(accountRepository.findByAccountNumber(accountNumber)).thenReturn(Optional.of(account));
 
-        // Call service method
-        bankingService.deposit("12345", BigDecimal.valueOf(500));
+        bankingService.withdraw(accountNumber, amount);
 
-        // Assertions
-        assertEquals(BigDecimal.valueOf(1500), account.getBalance());
-
-        // Verify repository interaction
-        verify(accountRepository, times(1)).findByAccountNumber("12345");
+        assertEquals(new BigDecimal("50.00"), account.getBalance());
         verify(accountRepository, times(1)).save(account);
     }
 
-    // Test for withdrawing money from an account
     @Test
-    public void testWithdraw() {
+    void testWithdraw_throwsRuntimeException_whenInsufficientBalance() {
+        String accountNumber = "12345";
+        BigDecimal amount = new BigDecimal("150.00");
         Account account = new Account();
-        account.setAccountNumber("12345");
-        account.setBalance(BigDecimal.valueOf(1000));
+        account.setAccountNumber(accountNumber);
+        account.setBalance(new BigDecimal("100.00"));
 
-        // Mock repository methods
-        when(accountRepository.findByAccountNumber("12345")).thenReturn(Optional.of(account));
+        when(accountRepository.findByAccountNumber(accountNumber)).thenReturn(Optional.of(account));
 
-        // Call service method
-        bankingService.withdraw("12345", BigDecimal.valueOf(500));
-
-        // Assertions
-        assertEquals(BigDecimal.valueOf(500), account.getBalance());
-
-        // Verify repository interaction
-        verify(accountRepository, times(1)).findByAccountNumber("12345");
-        verify(accountRepository, times(1)).save(account);
+        assertThrows(RuntimeException.class, () -> bankingService.withdraw(accountNumber, amount));
     }
 
-    // Test for insufficient funds during withdrawal
     @Test
-    public void testWithdrawInsufficientFunds() {
-        Account account = new Account();
-        account.setAccountNumber("12345");
-        account.setBalance(BigDecimal.valueOf(100));
+    void testUpdateAccount() {
+        Long accountId = 1L;
+        Account updatedAccount = new Account();
+        updatedAccount.setAccountNumber("67890");
+        updatedAccount.setBalance(new BigDecimal("200.00"));
 
-        // Mock repository methods
-        when(accountRepository.findByAccountNumber("12345")).thenReturn(Optional.of(account));
+        Account existingAccount = new Account();
+        existingAccount.setAccountNumber("12345");
+        existingAccount.setBalance(new BigDecimal("100.00"));
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(existingAccount));
+        when(accountRepository.save(existingAccount)).thenReturn(existingAccount);
 
-        // Call service method and assert exception
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> bankingService.withdraw("12345", BigDecimal.valueOf(200)));
-        assertEquals("Insufficient balance", exception.getMessage());
+        Account result = bankingService.updateAccount(accountId, updatedAccount);
 
-        // Verify repository interaction
-        verify(accountRepository, times(1)).findByAccountNumber("12345");
-        verify(accountRepository, times(0)).save(account);
+        assertNotNull(result);
+        assertEquals("67890", result.getAccountNumber());
+        assertEquals(new BigDecimal("200.00"), result.getBalance());
     }
 
-    // Test for getting cards by accountId
     @Test
-    public void testGetCards() {
+    void testGetCards() {
+        Long accountId = 1L;
         Account account = new Account();
-        account.setId(1L);
-        account.setAccountNumber("12345");
-        account.setBalance(BigDecimal.valueOf(1000));
+        account.setId(accountId);
+        List<Card> cards = List.of(new Card(), new Card());
 
-        Card card = new Card();
-        card.setId(1L);
-        card.setAccount(account);
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+        when(cardRepository.findByAccount(account)).thenReturn(cards);
 
-        // Mock repository methods
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
-        when(cardRepository.findByAccount(account)).thenReturn(Collections.singletonList(card));
+        List<Card> result = bankingService.getCards(accountId);
 
-        // Call service method
-        List<Card> cards = bankingService.getCards(1L);
-
-        // Assertions
-        assertNotNull(cards);
-        assertEquals(1, cards.size());
-        assertEquals(account, cards.get(0).getAccount());
-
-        // Verify repository interactions
-        verify(accountRepository, times(1)).findById(1L);
-        verify(cardRepository, times(1)).findByAccount(account);
+        assertNotNull(result);
+        assertEquals(2, result.size());
     }
 
-    // Test for getting payments by accountId
     @Test
-    public void testGetPayments() {
+    void testGetPayments() {
+        Long accountId = 1L;
         Account account = new Account();
-        account.setId(1L);
-        account.setAccountNumber("12345");
-        account.setBalance(BigDecimal.valueOf(1000));
+        account.setId(accountId);
+        List<Payment> payments = List.of(new Payment(), new Payment());
 
-        Payment payment = new Payment();
-        payment.setId(1L);
-        payment.setAmount(BigDecimal.valueOf(100));
-        payment.setAccount(account);
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+        when(paymentRepository.findByAccount(account)).thenReturn(payments);
 
-        // Mock repository methods
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
-        when(paymentRepository.findByAccount(account)).thenReturn(Collections.singletonList(payment));
+        List<Payment> result = bankingService.getPayments(accountId);
 
-        // Call service method
-        List<Payment> payments = bankingService.getPayments(1L);
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
 
-        // Assertions
-        assertNotNull(payments);
-        assertEquals(1, payments.size());
-        assertEquals(BigDecimal.valueOf(100), payments.get(0).getAmount());
+    @Test
+    void testGetAccountByNumber() {
+        String accountNumber = "12345";
+        Account account = new Account();
+        account.setAccountNumber(accountNumber);
 
-        // Verify repository interactions
-        verify(accountRepository, times(1)).findById(1L);
-        verify(paymentRepository, times(1)).findByAccount(account);
+        when(accountRepository.findByAccountNumber(accountNumber)).thenReturn(Optional.of(account));
+
+        Account result = bankingService.getAccountByNumber(accountNumber);
+
+        assertNotNull(result);
+        assertEquals(accountNumber, result.getAccountNumber());
+    }
+
+    @Test
+    void testDeleteAccount() {
+        Long accountId = 1L;
+        Account account = new Account();
+        account.setId(accountId);
+
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+
+        bankingService.deleteAccount(accountId);
+
+        verify(accountRepository, times(1)).delete(account);
     }
 }

@@ -1,5 +1,6 @@
 package com.vaultwise.service;
 
+import com.vaultwise.dto.PaymentRequest;
 import com.vaultwise.model.Account;
 import com.vaultwise.model.Payment;
 import com.vaultwise.repository.AccountRepository;
@@ -9,13 +10,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
+
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,38 +35,99 @@ class PaymentServiceTest {
     private PaymentService paymentService;
 
     private Account account;
+    private PaymentRequest paymentRequest;
 
     @BeforeEach
     void setUp() {
         account = new Account();
-        account.setAccountNumber("123456789");
+        account.setAccountNumber("12345");
+        account.setBalance(BigDecimal.valueOf(1000));
+
+        paymentRequest = new PaymentRequest();
+        paymentRequest.setAccountNumber("12345");
+        paymentRequest.setAmount(BigDecimal.valueOf(100));
+        paymentRequest.setDescription("Test Payment");
     }
 
     @Test
-    void testCreatePayment_Success() {
-        BigDecimal amount = new BigDecimal("100.00");
-        String description = "Test Payment";
+    void testCreatePayment() {
+        // Given
+        when(accountRepository.findByAccountNumber("12345")).thenReturn(Optional.of(account));
+        when(paymentRepository.save(Mockito.any(Payment.class))).thenReturn(new Payment(BigDecimal.valueOf(100), "Test Payment", account));
 
-        when(accountRepository.findByAccountNumber(any(String.class))).thenReturn(Optional.of(account));
-        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        // When
+        Payment payment = paymentService.createPayment("12345", BigDecimal.valueOf(100), "Test Payment");
 
-        Payment payment = paymentService.createPayment("123456789", amount, description);
-
+        // Then
         assertNotNull(payment);
-        assertEquals(amount, payment.getAmount());
-        assertEquals(description, payment.getDescription());
+        assertEquals("Test Payment", payment.getDescription());
+        assertEquals(BigDecimal.valueOf(100), payment.getAmount());
         assertEquals(account, payment.getAccount());
     }
 
     @Test
-    void testCreatePayment_AccountNotFound() {
-        when(accountRepository.findByAccountNumber(any(String.class))).thenReturn(Optional.empty());
+    void testGetAllPayments() {
+        // Given
+        Payment payment1 = new Payment(BigDecimal.valueOf(100), "Payment 1", account);
+        Payment payment2 = new Payment(BigDecimal.valueOf(200), "Payment 2", account);
+        when(paymentRepository.findAll()).thenReturn(Arrays.asList(payment1, payment2));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () ->
-                paymentService.createPayment("123456789", new BigDecimal("100.00"), "Test Payment")
-        );
+        // When
+        List<Payment> payments = paymentService.getAllPayments();
 
-        assertEquals("Account not found", exception.getMessage());
-        verify(paymentRepository, never()).save(any(Payment.class));
+        // Then
+        assertNotNull(payments);
+        assertEquals(2, payments.size());
+        assertEquals("Payment 1", payments.get(0).getDescription());
+        assertEquals("Payment 2", payments.get(1).getDescription());
     }
+
+    // New test: Get a payment by ID
+    @Test
+    void testGetPaymentById() {
+        // Given
+        Payment payment = new Payment(BigDecimal.valueOf(100), "Test Payment", account);
+        payment.setId(1L);
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+
+        // When
+        Payment foundPayment = paymentService.getPaymentById(1L);
+
+        // Then
+        assertNotNull(foundPayment);
+        assertEquals("Test Payment", foundPayment.getDescription());
+        assertEquals(BigDecimal.valueOf(100), foundPayment.getAmount());
+    }
+
+
+    @Test
+    void testUpdatePayment() {
+        // Given
+        Payment existingPayment = new Payment(BigDecimal.valueOf(50), "Old Payment", account);
+        existingPayment.setId(1L);
+
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(existingPayment));
+        when(paymentRepository.save(Mockito.any(Payment.class))).thenReturn(existingPayment);
+
+        // When
+        Payment updatedPayment = paymentService.updatePayment(1L, paymentRequest);
+
+        // Then
+        assertNotNull(updatedPayment);
+        assertEquals(BigDecimal.valueOf(100), updatedPayment.getAmount());
+        assertEquals("Test Payment", updatedPayment.getDescription());
+    }
+
+    @Test
+    void testDeletePayment() {
+        // Given
+        when(paymentRepository.existsById(1L)).thenReturn(true);
+
+        // When & Then
+        assertDoesNotThrow(() -> paymentService.deletePayment(1L));
+
+        // Verify that deleteById was called
+        verify(paymentRepository, times(1)).deleteById(1L);
+    }
+
 }

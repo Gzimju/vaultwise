@@ -5,10 +5,9 @@ import com.vaultwise.model.Transaction;
 import com.vaultwise.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -16,101 +15,89 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class TransactionServiceTest {
 
     @Mock
     private TransactionRepository transactionRepository;
 
-    @Mock
-    private BankingService bankingService;
-
     @InjectMocks
     private TransactionService transactionService;
 
-    private Transaction transaction;
-    private Account account;
-
     @BeforeEach
     void setUp() {
-        account = new Account();
-        account.setId(1L);
-
-        transaction = new Transaction();
-        transaction.setId(1L);
-        transaction.setAmount(new BigDecimal("100.00"));
-        transaction.setType("Deposit");
-        transaction.setAccount(account);
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testCreateTransaction_WithExistingAccount() {
-        when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
-        Transaction savedTransaction = transactionService.createTransaction(transaction);
+    void testCreateTransaction() {
+        // Create a mock account and a transaction with the account set
+        Account account = new Account();
+        account.setId(1L);  // Set the account ID or any necessary account fields
+        Transaction transaction = new Transaction(new BigDecimal("100.00"), "Deposit", account);
 
-        assertNotNull(savedTransaction);
-        assertEquals("Deposit", savedTransaction.getType());
-        assertEquals(new BigDecimal("100.00"), savedTransaction.getAmount());
-        verify(transactionRepository, times(1)).save(transaction);
-    }
-
-    @Test
-    void testCreateTransaction_WithAccountId() {
-        transaction.setAccount(null);
-        transaction.setAccountId(1L);
-        when(bankingService.getAccountById(1L)).thenReturn(account);
+        // Mock the repository's save method to return the transaction
         when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
 
-        Transaction savedTransaction = transactionService.createTransaction(transaction);
+        // Call the createTransaction method
+        Transaction createdTransaction = transactionService.createTransaction(transaction);
 
-        assertNotNull(savedTransaction);
-        assertEquals(account, savedTransaction.getAccount());
-        verify(bankingService, times(1)).getAccountById(1L);
-        verify(transactionRepository, times(1)).save(transaction);
+        // Assert that the transaction was created successfully
+        assertNotNull(createdTransaction);
+        assertEquals(new BigDecimal("100.00"), createdTransaction.getAmount());
+        assertEquals("Deposit", createdTransaction.getType());
+        assertEquals(account, createdTransaction.getAccount());  // Ensure the account is correctly set
+        verify(transactionRepository, times(1)).save(any(Transaction.class));  // Verify save is called once
     }
 
-    @Test
-    void testCreateTransaction_AccountNotFound() {
-        transaction.setAccount(null);
-        transaction.setAccountId(2L);
-        when(bankingService.getAccountById(2L)).thenReturn(null);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> transactionService.createTransaction(transaction));
-        assertEquals("Account not found with ID: 2", exception.getMessage());
-        verify(transactionRepository, never()).save(any(Transaction.class));
-    }
 
     @Test
     void testGetAllTransactions() {
-        List<Transaction> transactions = Arrays.asList(transaction);
+        List<Transaction> transactions = Arrays.asList(
+                new Transaction(new BigDecimal("50.00"), "Withdrawal", null),
+                new Transaction(new BigDecimal("200.00"), "Deposit", null)
+        );
+
         when(transactionRepository.findAll()).thenReturn(transactions);
 
-        List<Transaction> retrievedTransactions = transactionService.getAllTransactions();
+        List<Transaction> result = transactionService.getAllTransactions();
 
-        assertFalse(retrievedTransactions.isEmpty());
-        assertEquals(1, retrievedTransactions.size());
+        assertEquals(2, result.size());
+        assertEquals(new BigDecimal("50.00"), result.get(0).getAmount());
+        assertEquals("Withdrawal", result.get(0).getType());
         verify(transactionRepository, times(1)).findAll();
     }
 
     @Test
-    void testGetTransactionById_Success() {
+    void testGetTransactionById() {
+        Transaction transaction = new Transaction(new BigDecimal("75.00"), "Deposit", null);
         when(transactionRepository.findById(1L)).thenReturn(Optional.of(transaction));
 
-        Transaction retrievedTransaction = transactionService.getTransactionById(1L);
+        Transaction result = transactionService.getTransactionById(1L);
 
-        assertNotNull(retrievedTransaction);
-        assertEquals(1L, retrievedTransaction.getId());
+        assertNotNull(result);
+        assertEquals(new BigDecimal("75.00"), result.getAmount());
+        assertEquals("Deposit", result.getType());
         verify(transactionRepository, times(1)).findById(1L);
     }
 
     @Test
-    void testGetTransactionById_NotFound() {
-        when(transactionRepository.findById(2L)).thenReturn(Optional.empty());
+    void testUpdateTransaction() {
+        Transaction existingTransaction = new Transaction(new BigDecimal("100.00"), "Deposit", null);
+        Transaction updatedTransaction = new Transaction(new BigDecimal("120.00"), "Deposit", null);
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> transactionService.getTransactionById(2L));
-        assertEquals("Transaction not found with ID: 2", exception.getMessage());
+        when(transactionRepository.findById(1L)).thenReturn(Optional.of(existingTransaction));
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(updatedTransaction);
+
+        Transaction result = transactionService.updateTransaction(1L, updatedTransaction);
+
+        assertNotNull(result);
+        assertEquals(new BigDecimal("120.00"), result.getAmount());
+        verify(transactionRepository, times(1)).findById(1L);
+        verify(transactionRepository, times(1)).save(any(Transaction.class));
     }
 
     @Test

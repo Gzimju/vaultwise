@@ -1,7 +1,5 @@
 package com.vaultwise.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.vaultwise.dto.CardRequest;
 import com.vaultwise.model.Card;
 import com.vaultwise.service.CardService;
@@ -16,16 +14,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
-import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
-class CardControllerTest {
+public class CardControllerTest {
 
     private MockMvc mockMvc;
 
@@ -35,81 +32,86 @@ class CardControllerTest {
     @InjectMocks
     private CardController cardController;
 
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private Card card;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(cardController).build();
+
+        // Initialize card object for testing
+        card = new Card();
+        card.setId(1L);
+        card.setCardNumber("1234567890123456");
+        card.setCardType("Visa");
+        card.setCardHolderName("John Doe");
+        card.setSecurityCode("123");
     }
 
     @Test
     void testCreateCard() throws Exception {
-        CardRequest cardRequest = new CardRequest();
-        cardRequest.setCardNumber("1234567890123456");
-        cardRequest.setCardType("VISA");
-        cardRequest.setExpirationDate(LocalDate.of(2026, 12, 31));
-        cardRequest.setSecurityCode("123");
-        cardRequest.setCardHolderName("John Doe");
-
+        // Prepare Card object to send in the test
         Card card = new Card();
-        card.setCardNumber(cardRequest.getCardNumber());
-        card.setCardType(cardRequest.getCardType());
-        card.setExpirationDate(cardRequest.getExpirationDate());
-        card.setSecurityCode(cardRequest.getSecurityCode());
-        card.setCardHolderName(cardRequest.getCardHolderName());
+        card.setCardNumber("1234567890123456");
+        card.setCardType("Visa");
+        card.setCardHolderName("John Doe");
+        card.setSecurityCode("123");
+        card.setExpirationDate(LocalDate.of(2025, 12, 31));
 
+        // Mocking the service layer
         when(cardService.createCard(any(Card.class))).thenReturn(card);
 
+        // Perform the test
         mockMvc.perform(post("/api/cards")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(cardRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cardNumber").value(card.getCardNumber()))
-                .andExpect(jsonPath("$.cardType").value(card.getCardType()));
+                        .content("{\"cardNumber\":\"1234567890123456\", \"cardType\":\"Visa\", \"cardHolderName\":\"John Doe\", \"securityCode\":\"123\", \"expirationDate\":\"2025-12-31\"}"))
+                .andExpect(status().isOk())  // Expect 200 OK status
+                .andExpect(jsonPath("$.cardNumber").value("1234567890123456"))
+                .andExpect(jsonPath("$.cardType").value("Visa"))
+                .andExpect(jsonPath("$.cardHolderName").value("John Doe"));
     }
+
+
+
 
     @Test
     void testGetAllCards() throws Exception {
-        Card card = new Card();
-        when(cardService.getAllCards()).thenReturn(Collections.singletonList(card));
+        when(cardService.getAllCards()).thenReturn(List.of(card));
 
         mockMvc.perform(get("/api/cards"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0]").exists());
+                .andExpect(jsonPath("$[0].cardNumber").value("1234567890123456"));
     }
 
     @Test
     void testGetCardById() throws Exception {
-        Card card = new Card();
-        card.setId(1L);
         when(cardService.getCardById(1L)).thenReturn(Optional.of(card));
 
         mockMvc.perform(get("/api/cards/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L));
+                .andExpect(jsonPath("$.cardNumber").value("1234567890123456"));
     }
 
     @Test
     void testUpdateCard() throws Exception {
-        CardRequest updatedCardRequest = new CardRequest();
-        updatedCardRequest.setCardNumber("9876543210987654");
-
-        Card updatedCard = new Card();
-        updatedCard.setId(1L);
-        updatedCard.setCardNumber(updatedCardRequest.getCardNumber());
-
-        when(cardService.updateCard(any(Long.class), any(Card.class))).thenReturn(updatedCard);
+        when(cardService.updateCard(eq(1L), any(Card.class))).thenReturn(card);
 
         mockMvc.perform(put("/api/cards/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedCardRequest)))
+                        .content("{\"cardNumber\":\"1234567890123456\", \"cardType\":\"Visa\", \"cardHolderName\":\"John Doe\", \"securityCode\":\"123\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cardNumber").value(updatedCard.getCardNumber()));
+                .andExpect(jsonPath("$.cardNumber").value("1234567890123456"));
     }
 
     @Test
     void testDeleteCard() throws Exception {
-        mockMvc.perform(delete("/api/cards/1"))
-                .andExpect(status().isOk());
+        Long cardId = 1L;
+
+        // Perform the delete request
+        mockMvc.perform(delete("/api/cards/{id}", cardId))
+                .andExpect(status().isOk());  // Expect 200 OK since the controller doesn't explicitly return 204
+
+        // Verify that the deleteCard method was called once with the correct cardId
+        verify(cardService, times(1)).deleteCard(cardId);
     }
+
 }

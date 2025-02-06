@@ -1,86 +1,104 @@
 package com.vaultwise.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vaultwise.model.User;
 import com.vaultwise.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+import org.mockito.Mockito;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class UserControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Mock
-    private UserService userService;
-
-    @InjectMocks
     private UserController userController;
-
+    private UserService userService;
+    private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        userService = Mockito.mock(UserService.class);
+        userController = new UserController(userService);
         mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
         objectMapper = new ObjectMapper();
     }
 
     @Test
-    void createUser_ShouldReturnUser() throws Exception {
+    void testCreateUser() throws Exception {
         User user = new User("John", "password123", "john.doe@example.com", "Doe");
-        when(userService.createUser(any(User.class))).thenReturn(user);
+        user.setId(1L); // Assuming the ID is auto-generated
+
+        when(userService.createUser(Mockito.any(User.class))).thenReturn(user);
 
         mockMvc.perform(post("/api/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(user)))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(user))) // Use ObjectMapper to serialize User object
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"));
     }
 
     @Test
-    void getAllUsers_ShouldReturnUsers() throws Exception {
+    void testGetAllUsers() throws Exception {
         User user1 = new User("John", "password123", "john.doe@example.com", "Doe");
-        User user2 = new User("Jane", "password123", "jane.doe@example.com", "Doe");
+        User user2 = new User("Jane", "password456", "jane.doe@example.com", "Doe");
+
         when(userService.getAllUsers()).thenReturn(List.of(user1, user2));
 
         mockMvc.perform(get("/api/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$[0].firstName").value("John"))
+                .andExpect(jsonPath("$[1].firstName").value("Jane"));
     }
 
     @Test
-    void getUserById_ShouldReturnUser() throws Exception {
+    void testGetUserById() throws Exception {
+        Long userId = 1L;
         User user = new User("John", "password123", "john.doe@example.com", "Doe");
-        when(userService.getUserById(1L)).thenReturn(user);
+        user.setId(userId);
 
-        mockMvc.perform(get("/api/users/1"))
+        when(userService.getUserById(userId)).thenReturn(user);
+
+        mockMvc.perform(get("/api/users/{id}", userId))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userId))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.lastName").value("Doe"));
     }
 
     @Test
-    void deleteUser_ShouldReturnNoContent() throws Exception {
-        doNothing().when(userService).deleteUser(1L);
+    void testUpdateUser() throws Exception {
+        Long userId = 1L;
+        User updatedUser = new User("John", "newpassword", "john.new@example.com", "Doe");
+        updatedUser.setId(userId);
 
-        mockMvc.perform(delete("/api/users/1"))
+        when(userService.updateUser(Mockito.eq(userId), Mockito.any(User.class))).thenReturn(updatedUser);
+
+        mockMvc.perform(put("/api/users/{id}", userId)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(updatedUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userId))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
+
+    @Test
+    void testDeleteUser() throws Exception {
+        Long userId = 1L;
+
+        mockMvc.perform(delete("/api/users/{id}", userId))
                 .andExpect(status().isNoContent());
 
-        verify(userService, times(1)).deleteUser(1L);
+        // Optionally, you can verify that the userService.deleteUser method was called
+        Mockito.verify(userService, Mockito.times(1)).deleteUser(userId);
     }
 }
