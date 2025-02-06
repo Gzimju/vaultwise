@@ -53,7 +53,6 @@ class TransactionServiceTest {
         verify(transactionRepository, times(1)).save(any(Transaction.class));  // Verify save is called once
     }
 
-
     @Test
     void testGetAllTransactions() {
         List<Transaction> transactions = Arrays.asList(
