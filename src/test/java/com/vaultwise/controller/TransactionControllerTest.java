@@ -43,6 +43,7 @@ class TransactionControllerTest {
 
     @Test
     void testCreateTransaction() throws Exception {
+        // If transactions are made automatically, this test may be unnecessary.
         Transaction transaction = new Transaction(new BigDecimal("100.00"), "Deposit", null);
         transaction.setTransactionDate(new Date());
 
