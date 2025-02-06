@@ -17,10 +17,10 @@ public class User {
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password", nullable = false, unique = true)
     private String password;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
     @Column(name = "last_name", nullable = false)
